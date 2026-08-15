@@ -30,15 +30,25 @@ against the full test suite before moving on, so behavior is preserved at every 
 
    Each scenario asserts both the resulting stock level in the database and which notification was
    (or was not) emitted.
-2. **Strategy extraction** — Isolate each product category's business rules into its own
-   strategy module, replacing the nested conditions in the route handler.
+2. **◇ Strategy extraction (done)** — Each product category's business rules now live in its own
+   strategy module under `src/strategies/` (`NormalProductStrategy`, `SeasonalProductStrategy`,
+   `ExpirableProductStrategy`). They are pure decision logic (a product + a reference date in, an
+   action out), replacing the nested conditions that were embedded in the route handler. The
+   `ProductService` now owns the order-processing orchestration, and the controller only handles
+   HTTP (parse, delegate, reply).
+
+   - `src/strategies/product.strategy.ts` — `ProductStrategy` contract, `StrategyAction` results and factory
+   - `src/strategies/normal-product-strategy.ts`
+   - `src/strategies/seasonal-product-strategy.ts`
+   - `src/strategies/expirable-product-strategy.ts`
 3. **Layer decoupling (SRP)** — Enforce strict separation: controllers only handle HTTP, services
    own business orchestration, and domain rules live in the strategies.
 4. **Unit tests & wrap-up** — Add isolated unit tests for the date-boundary logic and document the
    final architecture.
 
-Status: **Step 1 complete** — the characterization suite is in place and green
-(`pnpm test` passes: 1 unit + 9 integration tests).
+Status: **Steps 1–2 complete** — the characterization suite is in place and green
+(`pnpm test` passes: 1 unit + 9 integration tests), and the business rules have been extracted
+into per-category strategies with the controller delegating orchestration to the service.
 
 ## Known build & setup issues
 
