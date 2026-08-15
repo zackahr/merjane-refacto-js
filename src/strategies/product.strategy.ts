@@ -1,6 +1,7 @@
 import {NormalProductStrategy} from './normal-product-strategy.js';
 import {SeasonalProductStrategy} from './seasonal-product-strategy.js';
 import {ExpirableProductStrategy} from './expirable-product-strategy.js';
+import {PRODUCT_TYPES} from '@/constants/inventory.js';
 import {type Product} from '@/db/schema.js';
 
 export type StrategyAction =
@@ -17,20 +18,16 @@ export type ProductStrategy = {
 
 export function createProductStrategy(type: Product['type']): ProductStrategy {
 	switch (type) {
-		case 'NORMAL': {
+		case PRODUCT_TYPES.NORMAL: {
 			return new NormalProductStrategy();
 		}
 
-		case 'SEASONAL': {
+		case PRODUCT_TYPES.SEASONAL: {
 			return new SeasonalProductStrategy();
 		}
 
-		case 'EXPIRABLE': {
+		case PRODUCT_TYPES.EXPIRABLE: {
 			return new ExpirableProductStrategy();
-		}
-
-		default: {
-			throw new Error(`Unsupported product type: ${type}`);
 		}
 	}
 }
