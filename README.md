@@ -41,14 +41,17 @@ against the full test suite before moving on, so behavior is preserved at every 
    - `src/strategies/normal-product-strategy.ts`
    - `src/strategies/seasonal-product-strategy.ts`
    - `src/strategies/expirable-product-strategy.ts`
-3. **Layer decoupling (SRP)** — Enforce strict separation: controllers only handle HTTP, services
-   own business orchestration, and domain rules live in the strategies.
+3. **◇ Layer decoupling (SRP) (done)** — Strict separation is enforced and verified across the
+   three layers: controllers only parse/validate HTTP and reply, services own business
+   orchestration and persistence, strategies hold the domain rules. Magic values are centralized in
+   `src/constants/inventory.ts` (product types and time constants), and the `products.type` column
+   is typed against the `ProductType` union so invalid values are caught at compile time.
 4. **Unit tests & wrap-up** — Add isolated unit tests for the date-boundary logic and document the
    final architecture.
 
-Status: **Steps 1–2 complete** — the characterization suite is in place and green
-(`pnpm test` passes: 1 unit + 9 integration tests), and the business rules have been extracted
-into per-category strategies with the controller delegating orchestration to the service.
+Status: **Steps 1–3 complete** — characterization suite green (1 unit + 9 integration tests),
+business rules extracted into per-category strategies, and strict SRP layering enforced with
+centralized constants.
 
 ## Known build & setup issues
 
