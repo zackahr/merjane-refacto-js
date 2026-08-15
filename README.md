@@ -46,12 +46,49 @@ against the full test suite before moving on, so behavior is preserved at every 
    orchestration and persistence, strategies hold the domain rules. Magic values are centralized in
    `src/constants/inventory.ts` (product types and time constants), and the `products.type` column
    is typed against the `ProductType` union so invalid values are caught at compile time.
-4. **Unit tests & wrap-up** — Add isolated unit tests for the date-boundary logic and document the
-   final architecture.
+4. **◇ Unit tests & wrap-up (done)** — Isolated unit tests exercise the date-boundary logic of the
+   extracted strategies without any database or infrastructure:
 
-Status: **Steps 1–3 complete** — characterization suite green (1 unit + 9 integration tests),
-business rules extracted into per-category strategies, and strict SRP layering enforced with
-centralized constants.
+   - `src/strategies/normal-product-strategy.spec.ts` (decrement / delay / none)
+   - `src/strategies/seasonal-product-strategy.spec.ts` (exact season-start and season-end
+     boundaries, delivery past season end, delivery within season, season not started)
+   - `src/strategies/expirable-product-strategy.spec.ts` (exact expiry-date boundary, sale before
+     expiry regardless of stock after expiry)
+
+Status: **All steps complete** — 14 unit + 9 integration tests green, business rules isolated in
+strategies, strict SRP layering enforced with centralized constants.
+
+## Final architecture
+
+The inventory tracking flow follows a strict three-layer separation:
+
+```text
+HTTP request
+    │
+    ▼
+Controller (HTTP only)          src/controllers/my-controller.ts
+    │  validates params + replies {orderId}
+    ▼
+ProductService (orchestration)  src/services/impl/product.service.ts
+    │  loads the order, drives the strategy per product,
+    │  persists stock and emits notifications
+    ▼
+Product strategies (domain)     src/strategies/*-product-strategy.ts
+    │  pure decisions: product + reference date → action
+    │  (decrement / delay / out-of-stock / unavailable / expired / none)
+    ▼
+INotificationService (port)     src/services/notifications.port.ts (unchanged)
+```
+
+- **Controller** strictly handles HTTP request parsing/validation and response formatting.
+- **Service** owns business orchestration, persistence and side effects (notifications).
+- **Strategies** encapsulate category-specific rules as pure functions with an explicit reference
+  date, eliminating nested conditionals.
+- **Constants** (`src/constants/inventory.ts`) centralize product types and time magic values.
+
+Regression safety was guaranteed by characterization tests written *before* any source change:
+they lock the existing behavior (stock levels + emitted notifications for every product category),
+so the refactor kept the endpoint contract and scenarios identical throughout.
 
 ## Known build & setup issues
 
