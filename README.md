@@ -60,7 +60,7 @@ strategies, strict SRP layering enforced with centralized constants.
 
 ## Final architecture
 
-The inventory tracking flow follows a strict three-layer separation:
+The inventory tracking flow follows a strict four-layer separation:
 
 ```text
 HTTP request
@@ -71,19 +71,28 @@ Controller (HTTP only)          src/controllers/my-controller.ts
     ▼
 ProductService (orchestration)  src/services/impl/product.service.ts
     │  loads the order, drives the strategy per product,
-    │  persists stock and emits notifications
+    │  applies side effects (stock mutation + notifications)
     ▼
 Product strategies (domain)     src/strategies/*-product-strategy.ts
     │  pure decisions: product + reference date → action
     │  (decrement / delay / out-of-stock / unavailable / expired / none)
     ▼
+Repositories (data access)      src/repository/*.repository.ts
+    │  sole owners of SQL via drizzle, thin base class
+    │  ProductRepository (findById / findByName / persist),
+    │  OrderRepository (findByIdWithProducts)
+    ▼
 INotificationService (port)     src/services/notifications.port.ts (unchanged)
 ```
 
 - **Controller** strictly handles HTTP request parsing/validation and response formatting.
-- **Service** owns business orchestration, persistence and side effects (notifications).
+- **Service** owns business orchestration and side effects (stock mutation + notifications),
+  delegating every read/write to the repositories.
 - **Strategies** encapsulate category-specific rules as pure functions with an explicit reference
   date, eliminating nested conditionals.
+- **Repositories** centralize all database access (drizzle queries) behind a thin
+  `BaseRepository` (`src/repository/base.repository.ts`) that provides the shared database
+  handle; `ProductRepository` and `OrderRepository` extend it.
 - **Constants** (`src/constants/inventory.ts`) centralize product types and time magic values.
 
 Regression safety was guaranteed by characterization tests written *before* any source change:
