@@ -45,8 +45,7 @@ export class ProductService {
 	 */
 	public async notifyDelay(leadTime: number, p: Product): Promise<void> {
 		p.leadTime = leadTime;
-		await this.productRepository.persist(p);
-		this.notificationService.sendDelayNotification(leadTime, p.name);
+		await this.apply({type: STRATEGY_ACTIONS.DELAY}, p);
 	}
 
 	/** Executes the side effects decided by a strategy: mutates stock, persists the row, and emits the matching notification. */
@@ -54,36 +53,45 @@ export class ProductService {
 		switch (action.type) {
 			case STRATEGY_ACTIONS.DECREMENT: {
 				product.available -= 1;
-				await this.productRepository.persist(product);
 				break;
 			}
 
+			case STRATEGY_ACTIONS.OUT_OF_SEASON:
+			case STRATEGY_ACTIONS.EXPIRED: {
+				product.available = 0;
+				break;
+			}
+
+			case STRATEGY_ACTIONS.DELAY:
+			case STRATEGY_ACTIONS.OUT_OF_STOCK:
+			case STRATEGY_ACTIONS.NONE: {
+				break;
+			}
+		}
+
+		// `NONE` has no side effects at all: neither a write nor a notification.
+		if (action.type !== STRATEGY_ACTIONS.NONE) {
+			await this.productRepository.persist(product);
+		}
+
+		switch (action.type) {
 			case STRATEGY_ACTIONS.DELAY: {
-				await this.productRepository.persist(product);
 				this.notificationService.sendDelayNotification(product.leadTime, product.name);
 				break;
 			}
 
-			case STRATEGY_ACTIONS.OUT_OF_STOCK: {
-				await this.productRepository.persist(product);
-				this.notificationService.sendOutOfStockNotification(product.name);
-				break;
-			}
-
+			case STRATEGY_ACTIONS.OUT_OF_STOCK:
 			case STRATEGY_ACTIONS.OUT_OF_SEASON: {
-				product.available = 0;
-				await this.productRepository.persist(product);
 				this.notificationService.sendOutOfStockNotification(product.name);
 				break;
 			}
 
 			case STRATEGY_ACTIONS.EXPIRED: {
-				product.available = 0;
-				await this.productRepository.persist(product);
 				this.notificationService.sendExpirationNotification(product.name, product.expiryDate!);
 				break;
 			}
 
+			case STRATEGY_ACTIONS.DECREMENT:
 			case STRATEGY_ACTIONS.NONE: {
 				break;
 			}
