@@ -1,9 +1,8 @@
 import {describe, it, expect} from 'vitest';
 import {SeasonalProductStrategy} from './seasonal-product-strategy.js';
-import {PRODUCT_TYPES, DAY_IN_MS, STRATEGY_ACTIONS} from '@/constants/inventory.js';
+import {PRODUCT_TYPES, DAY_IN_MS, STRATEGY_ACTIONS, NOW} from '@/constants/inventory.js';
 import {type Product} from '@/db/schema.js';
 
-const NOW = new Date('2025-06-15T12:00:00.000Z');
 
 function day(days: number): Date {
 	return new Date(NOW.getTime() + (days * DAY_IN_MS));

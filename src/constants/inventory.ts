@@ -8,6 +8,8 @@ export type ProductType = (typeof PRODUCT_TYPES)[keyof typeof PRODUCT_TYPES];
 
 export const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
+export const NOW = new Date('2025-06-15T12:00:00.000Z');
+
 export const STRATEGY_ACTIONS = {
 	DECREMENT: 'decrement',
 	DELAY: 'delay',

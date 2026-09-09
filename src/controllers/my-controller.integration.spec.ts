@@ -16,10 +16,8 @@ import {
 	type Product,
 } from '@/db/schema.js';
 import {type Database} from '@/db/type.js';
-import {DAY_IN_MS} from '@/constants/inventory.js';
+import {DAY_IN_MS, NOW} from '@/constants/inventory.js';
 import {buildFastify} from '@/fastify.js';
-
-const NOW = new Date('2025-06-15T12:00:00.000Z');
 
 function daysFromNow(days: number): Date {
 	return new Date(NOW.getTime() + (days * DAY_IN_MS));
