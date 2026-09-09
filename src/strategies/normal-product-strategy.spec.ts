@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {NormalProductStrategy} from './normal-product-strategy.js';
-import {PRODUCT_TYPES} from '@/constants/inventory.js';
+import {PRODUCT_TYPES, STRATEGY_ACTIONS} from '@/constants/inventory.js';
 import {type Product} from '@/db/schema.js';
 
 describe('NormalProductStrategy', () => {
@@ -23,18 +23,18 @@ describe('NormalProductStrategy', () => {
 	it('decrements when available', () => {
 		const product = normalProduct({available: 5});
 
-		expect(strategy.evaluate(product, new Date())).toEqual({type: 'decrement'});
+		expect(strategy.evaluate(product, new Date())).toEqual({type: STRATEGY_ACTIONS.DECREMENT});
 	});
 
 	it('notifies a delay when out of stock and a lead time is set', () => {
 		const product = normalProduct({available: 0, leadTime: 10});
 
-		expect(strategy.evaluate(product, new Date())).toEqual({type: 'delay'});
+		expect(strategy.evaluate(product, new Date())).toEqual({type: STRATEGY_ACTIONS.DELAY});
 	});
 
 	it('does nothing when out of stock and no lead time is set', () => {
 		const product = normalProduct({available: 0, leadTime: 0});
 
-		expect(strategy.evaluate(product, new Date())).toEqual({type: 'none'});
+		expect(strategy.evaluate(product, new Date())).toEqual({type: STRATEGY_ACTIONS.NONE});
 	});
 });

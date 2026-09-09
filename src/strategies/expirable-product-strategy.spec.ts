@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {ExpirableProductStrategy} from './expirable-product-strategy.js';
-import {PRODUCT_TYPES, DAY_IN_MS} from '@/constants/inventory.js';
+import {PRODUCT_TYPES, DAY_IN_MS, STRATEGY_ACTIONS} from '@/constants/inventory.js';
 import {type Product} from '@/db/schema.js';
 
 const NOW = new Date('2025-06-15T12:00:00.000Z');
@@ -32,7 +32,7 @@ describe('ExpirableProductStrategy', () => {
 			expiryDate: day(26),
 		});
 
-		expect(strategy.evaluate(product, NOW)).toEqual({type: 'decrement'});
+		expect(strategy.evaluate(product, NOW)).toEqual({type: STRATEGY_ACTIONS.DECREMENT});
 	});
 
 	it('decrements while in stock up to the last available day', () => {
@@ -41,7 +41,7 @@ describe('ExpirableProductStrategy', () => {
 			expiryDate: day(1),
 		});
 
-		expect(strategy.evaluate(product, NOW)).toEqual({type: 'decrement'});
+		expect(strategy.evaluate(product, NOW)).toEqual({type: STRATEGY_ACTIONS.DECREMENT});
 	});
 
 	it('marks the product expired exactly on the expiry date', () => {
@@ -50,7 +50,7 @@ describe('ExpirableProductStrategy', () => {
 			expiryDate: NOW,
 		});
 
-		expect(strategy.evaluate(product, NOW)).toEqual({type: 'expired'});
+		expect(strategy.evaluate(product, NOW)).toEqual({type: STRATEGY_ACTIONS.EXPIRED});
 	});
 
 	it('marks the product expired after the expiry date regardless of stock', () => {
@@ -59,6 +59,6 @@ describe('ExpirableProductStrategy', () => {
 			expiryDate: day(-2),
 		});
 
-		expect(strategy.evaluate(product, NOW)).toEqual({type: 'expired'});
+		expect(strategy.evaluate(product, NOW)).toEqual({type: STRATEGY_ACTIONS.EXPIRED});
 	});
 });

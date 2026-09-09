@@ -16,13 +16,13 @@ import {
 	type Product,
 } from '@/db/schema.js';
 import {type Database} from '@/db/type.js';
+import {DAY_IN_MS} from '@/constants/inventory.js';
 import {buildFastify} from '@/fastify.js';
 
-const DAY = 24 * 60 * 60 * 1000;
 const NOW = new Date('2025-06-15T12:00:00.000Z');
 
 function daysFromNow(days: number): Date {
-	return new Date(NOW.getTime() + (days * DAY));
+	return new Date(NOW.getTime() + (days * DAY_IN_MS));
 }
 
 describe('MyController Integration Tests', () => {
@@ -133,7 +133,7 @@ describe('MyController Integration Tests', () => {
 			expect(stored!.available).toBe(0);
 		});
 
-		it('marks the product UNAVAILABLE when the delivery timeframe extends beyond the season end', async () => {
+		it('marks the product OUT OF SEASON when the delivery timeframe extends beyond the season end', async () => {
 			// GIVEN
 			const product = seasonalProduct({
 				name: 'Grapes',
@@ -196,7 +196,7 @@ describe('MyController Integration Tests', () => {
 			expect(notificationServiceMock.sendExpirationNotification).not.toHaveBeenCalled();
 		});
 
-		it('marks the product UNAVAILABLE once expired', async () => {
+		it('zeros the stock once the product is expired', async () => {
 			// GIVEN
 			const product = expirableProduct({
 				name: 'Milk',

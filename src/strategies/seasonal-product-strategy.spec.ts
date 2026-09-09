@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {SeasonalProductStrategy} from './seasonal-product-strategy.js';
-import {PRODUCT_TYPES, DAY_IN_MS} from '@/constants/inventory.js';
+import {PRODUCT_TYPES, DAY_IN_MS, STRATEGY_ACTIONS} from '@/constants/inventory.js';
 import {type Product} from '@/db/schema.js';
 
 const NOW = new Date('2025-06-15T12:00:00.000Z');
@@ -33,7 +33,7 @@ describe('SeasonalProductStrategy', () => {
 			seasonEndDate: day(10),
 		});
 
-		expect(strategy.evaluate(product, NOW)).toEqual({type: 'decrement'});
+		expect(strategy.evaluate(product, NOW)).toEqual({type: STRATEGY_ACTIONS.DECREMENT});
 	});
 
 	it('does not sell exactly on the season start date', () => {
@@ -44,10 +44,10 @@ describe('SeasonalProductStrategy', () => {
 			seasonEndDate: day(30),
 		});
 
-		expect(strategy.evaluate(product, NOW)).toEqual({type: 'delay'});
+		expect(strategy.evaluate(product, NOW)).toEqual({type: STRATEGY_ACTIONS.DELAY});
 	});
 
-	it('marks the product unavailable exactly on the season end date', () => {
+	it('marks the product out of season exactly on the season end date', () => {
 		const product = seasonalProduct({
 			available: 5,
 			leadTime: 15,
@@ -55,10 +55,10 @@ describe('SeasonalProductStrategy', () => {
 			seasonEndDate: NOW,
 		});
 
-		expect(strategy.evaluate(product, NOW)).toEqual({type: 'unavailable'});
+		expect(strategy.evaluate(product, NOW)).toEqual({type: STRATEGY_ACTIONS.OUT_OF_SEASON});
 	});
 
-	it('marks the product unavailable when delivery extends past the season end', () => {
+	it('marks the product out of season when delivery extends past the season end', () => {
 		const product = seasonalProduct({
 			available: 0,
 			leadTime: 15,
@@ -66,7 +66,7 @@ describe('SeasonalProductStrategy', () => {
 			seasonEndDate: day(2),
 		});
 
-		expect(strategy.evaluate(product, NOW)).toEqual({type: 'unavailable'});
+		expect(strategy.evaluate(product, NOW)).toEqual({type: STRATEGY_ACTIONS.OUT_OF_SEASON});
 	});
 
 	it('notifies the delivery timeframe when delivery fits within the season', () => {
@@ -77,7 +77,7 @@ describe('SeasonalProductStrategy', () => {
 			seasonEndDate: day(58),
 		});
 
-		expect(strategy.evaluate(product, NOW)).toEqual({type: 'delay'});
+		expect(strategy.evaluate(product, NOW)).toEqual({type: STRATEGY_ACTIONS.DELAY});
 	});
 
 	it('notifies out-of-stock when the season has not started yet', () => {
@@ -87,6 +87,6 @@ describe('SeasonalProductStrategy', () => {
 			seasonEndDate: day(60),
 		});
 
-		expect(strategy.evaluate(product, NOW)).toEqual({type: 'out-of-stock'});
+		expect(strategy.evaluate(product, NOW)).toEqual({type: STRATEGY_ACTIONS.OUT_OF_STOCK});
 	});
 });

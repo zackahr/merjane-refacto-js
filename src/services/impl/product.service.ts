@@ -1,5 +1,6 @@
 import {type Cradle} from '@fastify/awilix';
 import {type INotificationService} from '../notifications.port.js';
+import {STRATEGY_ACTIONS} from '@/constants/inventory.js';
 import {type Product} from '@/db/schema.js';
 import {type OrderRepository} from '@/repository/order.repository.js';
 import {type ProductRepository} from '@/repository/product.repository.js';
@@ -51,39 +52,39 @@ export class ProductService {
 	/** Executes the side effects decided by a strategy: mutates stock, persists the row, and emits the matching notification. */
 	private async apply(action: StrategyAction, product: Product): Promise<void> {
 		switch (action.type) {
-			case 'decrement': {
+			case STRATEGY_ACTIONS.DECREMENT: {
 				product.available -= 1;
 				await this.productRepository.persist(product);
 				break;
 			}
 
-			case 'delay': {
+			case STRATEGY_ACTIONS.DELAY: {
 				await this.productRepository.persist(product);
 				this.notificationService.sendDelayNotification(product.leadTime, product.name);
 				break;
 			}
 
-			case 'out-of-stock': {
+			case STRATEGY_ACTIONS.OUT_OF_STOCK: {
 				await this.productRepository.persist(product);
 				this.notificationService.sendOutOfStockNotification(product.name);
 				break;
 			}
 
-			case 'unavailable': {
+			case STRATEGY_ACTIONS.OUT_OF_SEASON: {
 				product.available = 0;
 				await this.productRepository.persist(product);
 				this.notificationService.sendOutOfStockNotification(product.name);
 				break;
 			}
 
-			case 'expired': {
+			case STRATEGY_ACTIONS.EXPIRED: {
 				product.available = 0;
 				await this.productRepository.persist(product);
 				this.notificationService.sendExpirationNotification(product.name, product.expiryDate!);
 				break;
 			}
 
-			case 'none': {
+			case STRATEGY_ACTIONS.NONE: {
 				break;
 			}
 		}
