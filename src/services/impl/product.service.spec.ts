@@ -8,6 +8,8 @@ import {createDatabaseMock, cleanUp} from '../../utils/test-utils/database-tools
 import {ProductService} from './product.service.js';
 import {products, type Product} from '@/db/schema.js';
 import {type Database} from '@/db/type.js';
+import {OrderRepository} from '@/repository/order.repository.js';
+import {ProductRepository} from '@/repository/product.repository.js';
 
 describe('ProductService Tests', () => {
 	let notificationServiceMock: DeepMockProxy<INotificationService>;
@@ -15,13 +17,18 @@ describe('ProductService Tests', () => {
 	let databaseMock: Database;
 	let databaseName: string;
 	let closeDatabase: () => void;
+	let productRepository: ProductRepository;
+	let orderRepository: OrderRepository;
 
 	beforeEach(async () => {
 		({databaseMock, databaseName, close: closeDatabase} = await createDatabaseMock());
 		notificationServiceMock = mockDeep<INotificationService>();
+		productRepository = new ProductRepository({database: databaseMock});
+		orderRepository = new OrderRepository({database: databaseMock});
 		productService = new ProductService({
-			ns: notificationServiceMock,
-			db: databaseMock,
+			notificationService: notificationServiceMock,
+			productRepository,
+			orderRepository,
 		});
 	});
 
@@ -51,9 +58,7 @@ describe('ProductService Tests', () => {
 		expect(product.available).toBe(0);
 		expect(product.leadTime).toBe(15);
 		expect(notificationServiceMock.sendDelayNotification).toHaveBeenCalledWith(product.leadTime, product.name);
-		const result = await databaseMock.query.products.findFirst({
-			where: (product, {eq}) => eq(product.id, product.id),
-		});
+		const result = await productRepository.findById(1);
 		expect(result).toEqual(product);
 	});
 });

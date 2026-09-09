@@ -38,7 +38,7 @@ describe('MyController Integration Tests', () => {
 
 		fastify = await buildFastify();
 		fastify.diContainer.register({
-			ns: asValue(notificationServiceMock as INotificationService),
+			notificationService: asValue(notificationServiceMock as INotificationService),
 		});
 		await fastify.ready();
 		database = fastify.database;

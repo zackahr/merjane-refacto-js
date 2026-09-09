@@ -1,17 +1,21 @@
 import {type Cradle} from '@fastify/awilix';
-import {eq} from 'drizzle-orm';
 import {type INotificationService} from '../notifications.port.js';
-import {orders, products, type Product} from '@/db/schema.js';
-import {type Database} from '@/db/type.js';
+import {type Product} from '@/db/schema.js';
+import {type OrderRepository} from '@/repository/order.repository.js';
+import {type ProductRepository} from '@/repository/product.repository.js';
 import {type StrategyAction, createProductStrategy} from '@/strategies/product.strategy.js';
 
 export class ProductService {
-	private readonly ns: INotificationService;
-	private readonly db: Database;
+	private readonly notificationService: INotificationService;
+	private readonly productRepository: ProductRepository;
+	private readonly orderRepository: OrderRepository;
 
-	public constructor({ns, db}: Pick<Cradle, 'ns' | 'db'>) {
-		this.ns = ns;
-		this.db = db;
+	public constructor(
+		{notificationService, productRepository, orderRepository}: Pick<Cradle, 'notificationService' | 'productRepository' | 'orderRepository'>,
+	) {
+		this.notificationService = notificationService;
+		this.productRepository = productRepository;
+		this.orderRepository = orderRepository;
 	}
 
 	/**
@@ -19,17 +23,7 @@ export class ProductService {
 	 * then applies the resulting side effects (stock mutation, persistence, notification).
 	 */
 	public async processOrder(orderId: number): Promise<void> {
-		const order = await this.db.query.orders.findFirst({
-			where: eq(orders.id, orderId),
-			with: {
-				products: {
-					columns: {},
-					with: {
-						product: true,
-					},
-				},
-			},
-		});
+		const order = await this.orderRepository.findByIdWithProducts(orderId);
 
 		if (!order) {
 			return;
@@ -50,8 +44,8 @@ export class ProductService {
 	 */
 	public async notifyDelay(leadTime: number, p: Product): Promise<void> {
 		p.leadTime = leadTime;
-		await this.persist(p);
-		this.ns.sendDelayNotification(leadTime, p.name);
+		await this.productRepository.persist(p);
+		this.notificationService.sendDelayNotification(leadTime, p.name);
 	}
 
 	/** Executes the side effects decided by a strategy: mutates stock, persists the row, and emits the matching notification. */
@@ -59,33 +53,33 @@ export class ProductService {
 		switch (action.type) {
 			case 'decrement': {
 				product.available -= 1;
-				await this.persist(product);
+				await this.productRepository.persist(product);
 				break;
 			}
 
 			case 'delay': {
-				await this.persist(product);
-				this.ns.sendDelayNotification(product.leadTime, product.name);
+				await this.productRepository.persist(product);
+				this.notificationService.sendDelayNotification(product.leadTime, product.name);
 				break;
 			}
 
 			case 'out-of-stock': {
-				await this.persist(product);
-				this.ns.sendOutOfStockNotification(product.name);
+				await this.productRepository.persist(product);
+				this.notificationService.sendOutOfStockNotification(product.name);
 				break;
 			}
 
 			case 'unavailable': {
 				product.available = 0;
-				await this.persist(product);
-				this.ns.sendOutOfStockNotification(product.name);
+				await this.productRepository.persist(product);
+				this.notificationService.sendOutOfStockNotification(product.name);
 				break;
 			}
 
 			case 'expired': {
 				product.available = 0;
-				await this.persist(product);
-				this.ns.sendExpirationNotification(product.name, product.expiryDate!);
+				await this.productRepository.persist(product);
+				this.notificationService.sendExpirationNotification(product.name, product.expiryDate!);
 				break;
 			}
 
@@ -93,10 +87,5 @@ export class ProductService {
 				break;
 			}
 		}
-	}
-
-	/** Persists the product row with every column as currently mutated on the in-memory object. */
-	private async persist(product: Product): Promise<void> {
-		await this.db.update(products).set(product).where(eq(products.id, product.id));
 	}
 }
