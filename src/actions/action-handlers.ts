@@ -22,11 +22,13 @@ export const ACTION_HANDLERS: Record<StrategyActionType, ActionHandler> = {
 		notifier.sendOutOfStockNotification(product.name);
 	},
 
+	// A delivery past the season end means the product can never sell again: zero the stock.
 	[STRATEGY_ACTIONS.OUT_OF_SEASON]({product, notifier}) {
 		product.available = 0;
 		notifier.sendOutOfStockNotification(product.name);
 	},
 
+	// An expired product can never sell again: zero the stock.
 	[STRATEGY_ACTIONS.EXPIRED]({product, notifier}) {
 		product.available = 0;
 		notifier.sendExpirationNotification(product.name, product.expiryDate!);
