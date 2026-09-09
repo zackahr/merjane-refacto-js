@@ -27,8 +27,15 @@ export class ProductService {
 			return;
 		}
 
-		// Better-sqlite3 executes writes synchronously, so Promise.all cannot reorder side effects.
-		await Promise.all(order.products.map(async ({product}) => this.processProduct(product)));
+		// Products are chained sequentially: each product's side effects are emitted and persisted
+		// before the next one begins, keeping the processing order deterministic. `Promise.all` is
+		// intentionally avoided here — concurrent handling would be order-dependent and race-prone.
+		let chain: Promise<void> = Promise.resolve();
+		for (const {product} of order.products) {
+			chain = chain.then(async () => this.processProduct(product));
+		}
+
+		await chain;
 	}
 
 	public async notifyDelay(leadTime: number, p: Product): Promise<void> {

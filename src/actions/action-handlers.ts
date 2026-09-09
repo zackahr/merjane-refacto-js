@@ -9,6 +9,15 @@ type ActionContext = {
 
 export type ActionHandler = (context: ActionContext) => Promise<void> | void;
 
+type Notifier = (product: Product, notifier: INotificationService) => void;
+
+// Once a product can never be sold again its stock must be zeroed, then the relevant party notified.
+const zeroStockThen = (notify: Notifier): ActionHandler =>
+	({product, notifier}) => {
+		product.available = 0;
+		notify(product, notifier);
+	};
+
 export const ACTION_HANDLERS: Record<StrategyActionType, ActionHandler> = {
 	[STRATEGY_ACTIONS.DECREMENT]({product}) {
 		product.available -= 1;
@@ -22,17 +31,15 @@ export const ACTION_HANDLERS: Record<StrategyActionType, ActionHandler> = {
 		notifier.sendOutOfStockNotification(product.name);
 	},
 
-	// A delivery past the season end means the product can never sell again: zero the stock.
-	[STRATEGY_ACTIONS.OUT_OF_SEASON]({product, notifier}) {
-		product.available = 0;
+	// A delivery past the season end means the product can never sell again.
+	[STRATEGY_ACTIONS.OUT_OF_SEASON]: zeroStockThen((product, notifier) => {
 		notifier.sendOutOfStockNotification(product.name);
-	},
+	}),
 
-	// An expired product can never sell again: zero the stock.
-	[STRATEGY_ACTIONS.EXPIRED]({product, notifier}) {
-		product.available = 0;
+	// An expired product can never sell again.
+	[STRATEGY_ACTIONS.EXPIRED]: zeroStockThen((product, notifier) => {
 		notifier.sendExpirationNotification(product.name, product.expiryDate!);
-	},
+	}),
 
 	[STRATEGY_ACTIONS.NONE]() {
 		return undefined;
