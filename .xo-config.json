@@ -8,5 +8,24 @@
         "format": ["UPPER_CASE", "strictCamelCase"]
       }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/di/di.context.ts",
+        "src/db/drizzle.plugin.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/consistent-type-definitions": "off"
+      }
+    },
+    {
+      "files": [
+        "src/db/drizzle.config.ts"
+      ],
+      "rules": {
+        "unicorn/prefer-module": "off"
+      }
+    }
+  ]
 }

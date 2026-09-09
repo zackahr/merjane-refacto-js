@@ -10,7 +10,7 @@ import {ProductService} from '@/services/impl/product.service.js';
 
 declare module '@fastify/awilix' {
 
-	interface Cradle { // eslint-disable-line @typescript-eslint/consistent-type-definitions
+	interface Cradle {
 		logger: FastifyBaseLogger;
 		database: Database;
 		notificationService: INotificationService;
