@@ -20,10 +20,6 @@ export class ProductService {
 		this.orderRepository = orderRepository;
 	}
 
-	/**
-	 * Processes one order: for each product, asks its category strategy what to do,
-	 * then applies the resulting side effects (stock mutation, persistence, notification).
-	 */
 	public async processOrder(orderId: number): Promise<void> {
 		const order = await this.orderRepository.findByIdWithProducts(orderId);
 
@@ -31,16 +27,10 @@ export class ProductService {
 			return;
 		}
 
-		// Each product is processed independently; better-sqlite3 executes writes synchronously,
-		// so side effects still land in order.
+		// Better-sqlite3 executes writes synchronously, so Promise.all cannot reorder side effects.
 		await Promise.all(order.products.map(async ({product}) => this.processProduct(product)));
 	}
 
-	/**
-	 * Convenience helper retained for direct use / unit tests: sets the lead time, persists,
-	 * and notifies a restocking delay. The order flow reaches the same outcome via
-	 * `processOrder -> apply({type: 'delay'})`.
-	 */
 	public async notifyDelay(leadTime: number, p: Product): Promise<void> {
 		p.leadTime = leadTime;
 		await this.apply({type: STRATEGY_ACTIONS.DELAY}, p);
@@ -48,16 +38,14 @@ export class ProductService {
 
 	private async processProduct(product: Product): Promise<void> {
 		const strategy = createProductStrategy(product.type);
-		// `new Date()` is the reference date; strategies are pure so they can be exercised with any date in unit tests.
 		await this.apply(strategy.evaluate(product, new Date()), product);
 	}
 
-	/** Executes the side effects decided by a strategy: mutates stock, persists the row, and emits the matching notification. */
 	private async apply(action: StrategyAction, product: Product): Promise<void> {
 		const handle = ACTION_HANDLERS[action.type];
 		await handle({product, notifier: this.notificationService});
 
-		// `NONE` has no side effects at all: neither a write nor a notification.
+		// `NONE` implies no write: the row must stay untouched.
 		if (action.type !== STRATEGY_ACTIONS.NONE) {
 			await this.productRepository.persist(product);
 		}

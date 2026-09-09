@@ -9,17 +9,13 @@ import {type Product} from '@/db/schema.js';
  * `ProductService` owns the actual persistence and notification side effects.
  */
 export type StrategyAction =
-	// Sell the product: decrement `available` by 1 and persist.
 	| {type: typeof STRATEGY_ACTIONS.DECREMENT}
-	// Out of stock: notify a restocking delay; persist. Stock level is unchanged.
 	| {type: typeof STRATEGY_ACTIONS.DELAY}
-	// Not sellable (e.g. season not started): notify out-of-stock; persist. Stock level is unchanged.
 	| {type: typeof STRATEGY_ACTIONS.OUT_OF_STOCK}
-	// Out of season: zero the stock and notify out-of-stock (SEASONAL delivery past season end).
+	// Zeroes the stock: a delivery past the season end means the product can never sell again.
 	| {type: typeof STRATEGY_ACTIONS.OUT_OF_SEASON}
-	// Expired: zero the stock and notify expiration (EXPIRABLE past its expiry date).
+	// Zeroes the stock: an expired product can never sell again.
 	| {type: typeof STRATEGY_ACTIONS.EXPIRED}
-	// Do nothing (e.g. NORMAL out of stock with no lead time).
 	| {type: typeof STRATEGY_ACTIONS.NONE};
 
 export type ProductStrategy = {

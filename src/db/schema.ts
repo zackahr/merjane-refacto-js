@@ -4,7 +4,6 @@ import {
 } from 'drizzle-orm/sqlite-core';
 import {type ProductType} from '@/constants/inventory.js';
 
-// Declaring enum in database
 export const products = sqliteTable('products', {
 	id: integer('id').notNull().primaryKey(),
 	leadTime: integer('lead_time').notNull(),
